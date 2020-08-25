@@ -16,6 +16,7 @@ import time
 import pickle
 import csv
 import os
+import sys
 
 #####Clocks, streams, paths, chunking, GPIO
 streamOn = False
@@ -23,6 +24,7 @@ firstFrameIdx = 0
 trial_start = 0
 GPUtimer = mo.MMALCamera()
 trialNum = 0
+sessionNum = 0
 justOff = False
 framesPerSave = 2000
 dateStr = time.strftime("%Y%m%d")
@@ -171,6 +173,7 @@ class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
 class saveThread(threading.Thread):
 	def __init__(self,trialNum,nChunk,data,metadata):
 		threading.Thread.__init__(self)
+		self.sessionNum = sessionNum
 		self.trialNum = trialNum
 		self.nChunk = nChunk
 		self.data = data
@@ -179,8 +182,8 @@ class saveThread(threading.Thread):
 		t = time.time()
 		dateStr = time.strftime("%Y%m%d")
 		timeStr = time.strftime("%H%M%S")
-		fName = savePath + dateStr + '_' + timeStr + 'picam_t' +\
-		str(self.trialNum) + '_c' + str(self.nChunk)
+		fName = savePath + animalID + '_' + dateStr + '_' + timeStr + 'picam_s' +\
+		str(self.sessionNum)+ '_t' + str(self.trialNum) + '_c' + str(self.nChunk)
 		#filenames
 		metFname = fName + '.csv'
 		dataFname = fName + '.data'
@@ -204,6 +207,12 @@ def interrupt_on(on_pin):
 		firstFrameIdx = camera.frame.index
 		camera.annotate_text = ''
 		print('Trial start interrupt detected by picam')
+        
+#Allowing savepath to be passed in from another program
+if (len(sys.argv)>1):
+    savePath = sys.argv[1]
+    animalID = sys.argv[2]
+    sessionNum = sys.argv[3]
 
 ######Main
 with picamera.PiCamera(resolution='160x128', framerate=150) as camera:

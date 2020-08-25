@@ -23,6 +23,7 @@ import serial
 import time
 import os.path
 from threading import Thread
+import subprocess
 
 import eventlet
 eventlet.monkey_patch()
@@ -97,7 +98,7 @@ class eyeblink():
         thread.start()
             
         #save all serial data to file, set in setsavepath
-        self.savepath = ''
+        self.savepath = '/media/usb/'
         self.filePtr = None
         
         self.arduinoStateList = None #grab from arduino at start of trial, write into each epoch file
@@ -162,6 +163,21 @@ class eyeblink():
         if self.socketio:
             self.socketio.emit('serialdata', {'data': "=== Session " + str(self.trial['sessionNumber']) + " ==="})
         
+        #Starting the camera as a subprocess
+        c = subprocess.check_output(["/opt/vc/bin/vcgencmd","get_camera"])
+        int(c.strip()[-1])
+        if (c):
+            print("eyeblink initialized picamera")
+            #Calling picamera with system arguments(savepath,animalID,sessionNumber)
+            os.system("python3 puffCamera2_0.py "+\
+                self.trial['filePath']+" "+\
+                self.animalID+" "+\
+                str(self.trial['sessionNumber'])+\
+                " &")
+            raw_input('Hit return once camera is streaming')
+        else:
+            print("Picamera already running")
+        
         self.ser.write('startSession\n')
         self.trialRunning = 1
 
@@ -206,7 +222,7 @@ class eyeblink():
         sessionFolder = ''
         if self.animalID and not (self.animalID == 'default'):
             sessionStr = self.animalID + '_'
-            sessionFolder = dateStr + '_' + self.animalID
+            sessionFolder = self.animalID + '_' + dateStr
         
         thisSavePath = self.savepath + dateStr + '/'
         if not os.path.exists(thisSavePath):
@@ -215,10 +231,10 @@ class eyeblink():
         if not os.path.exists(thisSavePath):
             os.makedirs(thisSavePath)
         
-        sessionFileName = sessionStr + datetimeStr + '_s' + str(self.trial['sessionNumber']) + '_t' + str(self.trial['trialNumber']) + '.txt'
+        sessionFileName = sessionStr + datetimeStr + '_s' + str(self.trial['sessionNumber']) + '.txt'
         sessionFilePath = thisSavePath + sessionFileName
         
-        self.trial['filePath'] = sessionFilePath
+        self.trial['filePath'] = thisSavePath
         self.trial['fileName'] = sessionFileName
         
         #

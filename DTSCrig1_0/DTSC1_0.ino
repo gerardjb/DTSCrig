@@ -251,6 +251,7 @@ void stopSession(unsigned long now) {
   trial.trialIsRunning = false;
   digitalWrite(trial.trialPin,LOW);
   trial.sessionNumber += 1;
+	trial.currentTrial = 0;
   
   
   //I currently don't expect to have to change DTSC wheel, 

@@ -23,9 +23,9 @@ import json
 import sys
 import signal
 import subprocess
+from settings import APP_ROOT
 
 from eyeblink import eyeblink
-from settings import APP_ROOT
 
 #see: https://github.com/miguelgrinberg/Flask-SocketIO/issues/192
 eventlet.monkey_patch()
@@ -43,6 +43,7 @@ socketio = SocketIO(app, async_mode='eventlet')
 namespace = ''
 
 #Initializing objects attributes
+savepath = '/media/usb/' #location of mounted usb drive
 thread = None #second thread used by background_thread()
 ser = None
 myeyeblink = None
@@ -256,14 +257,6 @@ def animalform(message):
     emit('my response', {'data': "animal id is now '" + animalID + "'"})
 
 
-@socketio.on('plotSessionButtonID', namespace=namespace)
-def plotTrialButton(message):
-    filePath = message['data']
-    print('plotSessionButton() filename:' + filePath)
-    divStr = myplotlyplot(filePath,'div')
-    emit('lastSessionPlot', {'plotDiv': divStr})
-
-
 def sig_handler(signal,frame):
     print('Signal handler called by eyeblink_app.py')
     myeyeblink.__del__
@@ -276,19 +269,10 @@ if __name__ == '__main__':
         #Make kill method for all processes and threads
         signal.signal(signal.SIGINT, sig_handler)
 
-        #Starting the camera as a subprocess
-        c = subprocess.check_output(["/opt/vc/bin/vcgencmd","get_camera"])
-        int(c.strip()[-1])
-        if (c):
-            print("eyeblink_app initialized picamera")
-            os.system("python3 puffCamera2_0.py &")
-        else:
-            print("Picamera already running")
-
         #Initializing the eyeblink object
         myeyeblink = eyeblink()
-        dataRoot = os.path.join(APP_ROOT, "data") + '/'
-        myeyeblink.setsavepath(dataRoot)
+        #dataRoot = os.path.join(savepath) + '/'
+        #myeyeblink.setsavepath(dataRoot)
         myeyeblink.bAttachSocket(socketio)
 
         #Reporting server state on connection
