@@ -13,6 +13,8 @@
 #include <Encoder.h> // http://www.pjrc.com/teensy/td_libs_Encoder.html
 
 /////////////////////////////////////////////////////////////
+//////Making sure puffPin is set LOW
+int puffPin = 5;
 /*Structure and state definitions*/
 //Defining trial structure with associated attributes
 struct trial
@@ -143,11 +145,13 @@ void setup()
   digitalWrite(13,LOW);
 
   //CS/US structure and pin settings, intially at Arduino grnd
+  pinMode(puffPin,OUTPUT);
+  digitalWrite(puffPin,LOW);
   ledCS.ledPin = 4;
   ledCS.isOnLED = false;
   pinMode(ledCS.ledPin,OUTPUT);
   digitalWrite(ledCS.ledPin,LOW);
-  DTSC_US.DTSCPin = 5;
+  DTSC_US.DTSCPin = 12;
   DTSC_US.isOnDTSC = false;
   pinMode(DTSC_US.DTSCPin,OUTPUT);
   digitalWrite(DTSC_US.DTSCPin,LOW);
@@ -179,6 +183,7 @@ void startSession(unsigned long now) {
     trial.currentTrial = 0;
     
     serialOut(now, "startSession", trial.sessionNumber);
+    digitalWrite(trial.trialPin,HIGH);
     serialOut(now, "startTrial", trial.currentTrial);
 
     trial.sessionIsRunning = true;
@@ -205,6 +210,7 @@ void startTrial(unsigned long now){
     trial.currentTrial += 1;
 
     trial.trialStartMillis = now;
+    digitalWrite(trial.trialPin,HIGH);
     serialOut(now,"startTrial",trial.currentTrial);
 
     trial.trialIsRunning = true;
@@ -229,6 +235,7 @@ void stopTrial(unsigned long now) {
   stopSession(now);
   }
   trial.trialIsRunning = false;
+  digitalWrite(trial.trialPin,LOW);
   serialOut(now, "stopTrial", trial.currentTrial);
   //Set time to wait until next trial starts
   interTrialInterval = random(trial.interTrialIntervalLow,trial.interTrialIntervalHigh);
@@ -244,7 +251,7 @@ void stopSession(unsigned long now) {
       trial.trialIsRunning = false;
       serialOut(now,"stopTrial",trial.currentTrial);
     }
-  
+  digitalWrite(trial.trialPin,LOW);
   serialOut(now,"stopSession",trial.sessionNumber);
   //reset states
   trial.sessionIsRunning = false;
@@ -474,17 +481,17 @@ void updateDTSC(unsigned long now){
 }
 
 //Conveying trial state
-void updateTrialPin(unsigned long now){
-  if (trial.trialIsRunning && !trial.pinOnOff){
-    digitalWrite(trial.trialPin,HIGH);
-    digitalWrite(13,HIGH);
-    trial.pinOnOff = true;
-  } else if (!trial.trialIsRunning && trial.pinOnOff){
-    digitalWrite(trial.trialPin,LOW);
-    digitalWrite(13,LOW);
-    trial.pinOnOff = false;
-  }
-}
+//void updateTrialPin(unsigned long now){
+//  if (trial.trialIsRunning && !trial.pinOnOff){
+//    digitalWrite(trial.trialPin,HIGH);
+//    digitalWrite(13,HIGH);
+//    trial.pinOnOff = true;
+//  } else if (!trial.trialIsRunning && trial.pinOnOff){
+//    digitalWrite(trial.trialPin,LOW);
+//    digitalWrite(13,LOW);
+//    trial.pinOnOff = false;
+//  }
+//}
 /////////////////////////////////////////////////////////////
 /*Loop*/
 void loop()
@@ -523,7 +530,7 @@ void loop()
 
   updateDTSC(now);
 
-  updateTrialPin(now);
+//  updateTrialPin(now);
   
   delayMicroseconds(500); //ms
 

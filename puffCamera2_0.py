@@ -36,7 +36,7 @@ if not os.path.exists(savePath):
 GPIO.setwarnings(False)
 GPIO.cleanup()
 GPIO.setmode(GPIO.BCM)
-on_pin = 25 #Note there is no BCM GPIO pin 27 on RPi4's, use 25
+on_pin = 27 #Note there is no BCM GPIO pin 27 on RPi4's, use 25
 GPIO.setup(on_pin,GPIO.IN,pull_up_down=GPIO.PUD_DOWN)
 
 #####Setting up HTML page appearance
@@ -191,9 +191,11 @@ class saveThread(threading.Thread):
 		with open(metFname,'w',newline = '') as metout:
 			wr = csv.writer(metout)
 			wr.writerows(self.metadata)
+		metout.close()
 		#Pickle hexadecimal image data
 		fData = open(dataFname,'wb')
 		pickle.dump(self.data,fData)
+		fData.close()
 		elapsed = time.time() - t
 		print('Wrote files, writing took' + str(elapsed))
 
@@ -215,9 +217,10 @@ if (len(sys.argv)>1):
     sessionNum = sys.argv[3]
 
 ######Main
-with picamera.PiCamera(resolution='160x128', framerate=150) as camera:
+with picamera.PiCamera(resolution='320x256', framerate=80) as camera:
 	output = StreamingOutput()
 	#Getting consistent camera levels
+	camera.rotation = 180
 	time.sleep(2) #let the levels settle
 	camera.shutter_speed = camera.exposure_speed
 	camera.exposure_mode = 'off'
