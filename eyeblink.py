@@ -175,6 +175,7 @@ class eyeblink():
                 str(self.trial['sessionNumber'])+\
                 " &")
             raw_input('Hit return once camera is streaming')
+            time.sleep(1)
         else:
             print("Picamera already running")
         
