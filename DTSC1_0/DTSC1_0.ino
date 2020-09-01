@@ -413,31 +413,35 @@ void updateEncoder(unsigned long now,bool inCS_USint) {
   if (trial.trialIsRunning){  
     float diff = now - rotaryencoder.timer;
     
-    if (diff>=20 && !inCS_USint && !transmitAttack){
+		//update encoder output when specified difference reached
+    if (diff>=20){
       float dist =  rotaryencoder.pos - posNow;
       serialOut(now, "rotary", dist);
       rotaryencoder.timer = now;
       rotaryencoder.pos = posNow;
-      rotaryencoder.sumCS_US = 0;
-    }else if (diff>=20 && inCS_USint){
-      float dist =  rotaryencoder.pos - posNow;
-      serialOut(now, "rotary", dist);
-      rotaryencoder.timer = now;
-      rotaryencoder.pos = posNow;
-      rotaryencoder.sumCS_US += dist;
+    }
+		
+		//Sum movement during CS_US interval then send attack
+		if (inCS_USint && !transmitAttack && (stimPairType=="US"||stimPairType=="CS_US")){
+      float CS_USposStart =  posNow;
       transmitAttack = true;
-    }else if (diff>=20 && !inCS_USint){
-      float dist =  rotaryencoder.pos - posNow;
-      serialOut(now, "rotary", dist);
-      rotaryencoder.timer = now;
-      rotaryencoder.pos = posNow;
-      rotaryencoder.sumCS_US += dist;
+    }else if (!inCS_USint && transmitAttack && (stimPairType=="US"||stimPairType=="CS_US")){
+      rotaryencoder.sumCS_US = CS_USposStart - posNow;
+			serialOut(now,'CS_USsum',rotaryencoder.sumCS_US);
       if (rotaryencoder.sumCS_US>=0){
         wireOut(1,1);//send big attack if animal didn't move back
+				DTSC_US.isOnDTSC = true;
+				serialOut(now,"bigUSon",trial.currentTrial);
+				digitalWrite(DTSC_US.DTSCPin,HIGH);
+				
       }else{
         wireOut(1,0);//send little attack if animal moved back
+				DTSC_US.isOnDTSC = true;
+				serialOut(now,smallUSon",trial.currentTrial);
+				digitalWrite(DTSC_US.DTSCPin,HIGH);
       }
       transmitAttack = false;
+			rotaryencoder.sumCS_US = 0;
     }
   }
   
@@ -465,14 +469,10 @@ void updateLED(unsigned long now){
 //Triggering the DTSC US
 void updateDTSC(unsigned long now){
   if (trial.trialIsRunning && (stimPairType=="US"||stimPairType=="CS_US")){
-    //Turning US on and off while correct trial type is running
+    //Turning US off while correct trial type is running
     unsigned long DTSCStart = trial.trialStartMillis + trial.preCSdur + trial.CS_USinterval;
     unsigned long DTSCStop = DTSCStart + trial.USdur;
-    if (!DTSC_US.isOnDTSC && now >= DTSCStart && now <= DTSCStop){
-      DTSC_US.isOnDTSC = true;
-      serialOut(now,"DTSC_USon",trial.currentTrial);
-      digitalWrite(DTSC_US.DTSCPin,HIGH);
-    } else if (DTSC_US.isOnDTSC && now > DTSCStop){
+    if (DTSC_US.isOnDTSC && now > DTSCStop){
       DTSC_US.isOnDTSC = false;
       serialOut(now,"DTSCUSoff",trial.currentTrial);
       digitalWrite(DTSC_US.DTSCPin,LOW);
@@ -480,19 +480,7 @@ void updateDTSC(unsigned long now){
   }
 }
 
-//Conveying trial state
-//void updateTrialPin(unsigned long now){
-//  if (trial.trialIsRunning && !trial.pinOnOff){
-//    digitalWrite(trial.trialPin,HIGH);
-//    digitalWrite(13,HIGH);
-//    trial.pinOnOff = true;
-//  } else if (!trial.trialIsRunning && trial.pinOnOff){
-//    digitalWrite(trial.trialPin,LOW);
-//    digitalWrite(13,LOW);
-//    trial.pinOnOff = false;
-//  }
-//}
-/////////////////////////////////////////////////////////////
+
 /*Loop*/
 void loop()
 {
@@ -532,6 +520,6 @@ void loop()
 
 //  updateTrialPin(now);
   
-  delayMicroseconds(500); //ms
+  delayMicroseconds(300); //ms
 
 }
