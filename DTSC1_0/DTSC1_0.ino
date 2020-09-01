@@ -5,7 +5,7 @@
  * 
  * V1.0 - rewritten from eyeblink3_4 to interface with DTSC_US and
  *  eyeblink_app.py
- * todo: -Get ScanImage incorporated into hardware interactions
+ * todo: -
  */
  
 #include "Arduino.h"
@@ -67,6 +67,7 @@ struct rotaryencoder
   int pinB = 3; // use pin 3
   float pos = 0; //setting initial position of encoder
   float timer = 0; //setting up to query the position only once every 100 ms
+  float CS_USposStart = 0;//position at start of CS
   float sumCS_US = 0;//sum of roary encoder during CS-US interval
 };
 
@@ -423,11 +424,10 @@ void updateEncoder(unsigned long now,bool inCS_USint) {
 		
 		//Sum movement during CS_US interval then send attack
 		if (inCS_USint && !transmitAttack && (stimPairType=="US"||stimPairType=="CS_US")){
-      float CS_USposStart =  posNow;
+      rotaryencoder.CS_USposStart =  posNow;
       transmitAttack = true;
     }else if (!inCS_USint && transmitAttack && (stimPairType=="US"||stimPairType=="CS_US")){
-      rotaryencoder.sumCS_US = CS_USposStart - posNow;
-			serialOut(now,'CS_USsum',rotaryencoder.sumCS_US);
+      rotaryencoder.sumCS_US = rotaryencoder.CS_USposStart - posNow;
       if (rotaryencoder.sumCS_US>=0){
         wireOut(1,1);//send big attack if animal didn't move back
 				DTSC_US.isOnDTSC = true;
@@ -437,7 +437,7 @@ void updateEncoder(unsigned long now,bool inCS_USint) {
       }else{
         wireOut(1,0);//send little attack if animal moved back
 				DTSC_US.isOnDTSC = true;
-				serialOut(now,smallUSon",trial.currentTrial);
+				serialOut(now,"smallUSon",trial.currentTrial);
 				digitalWrite(DTSC_US.DTSCPin,HIGH);
       }
       transmitAttack = false;
@@ -490,7 +490,7 @@ void loop()
   msIntoTrial = now-trial.trialStartMillis;
   
   //Boolean for if we're in the interval between CS and US
-  inCS_USint = (msIntoTrial > trial.preCSdur) && (msIntoTrial < (trial.preCSdur + trial.CS_USinterval-20));
+  inCS_USint = (msIntoTrial > trial.preCSdur) && (msIntoTrial < (trial.preCSdur + trial.CS_USinterval));
   
   if (Serial.available() > 0) {
     String inString = Serial.readStringUntil('\n');
