@@ -59,10 +59,10 @@ void updateEncoder(unsigned long now) {
 }
 
 void loop() {
-  //Counting millis like a bitch
+  //Counting millis
   unsigned long now = millis();
 
-  //Function to how much the darn thing has changed
+  //Function to how much the encoder has moved
   updateEncoder(now);
 
 }
