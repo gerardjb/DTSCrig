@@ -1,9 +1,9 @@
-'''eyeblink_app.py
+'''dtsc_app.py
 Joey Broussard
 PNI
 20191106
 
-Interfaces the eyeblink class with an HTML/JS based web GUI
+Interfaces the dtsc class with an HTML/JS based web GUI
 
 (1) need to use eventlet, otherwise .run() defaults to gevent() which is SLOW
 (2) monkey_path() wraps some functions to call eventlet equivalents
@@ -25,7 +25,8 @@ import signal
 import subprocess
 from settings import APP_ROOT
 
-from eyeblink import eyeblink
+from dtsc import dtsc
+from settings import APP_ROOT
 
 #see: https://github.com/miguelgrinberg/Flask-SocketIO/issues/192
 eventlet.monkey_patch()
@@ -46,7 +47,7 @@ namespace = ''
 savepath = '/media/usb/' #location of mounted usb drive
 thread = None #second thread used by background_thread()
 ser = None
-myeyeblink = None
+mydtsc = None
 myanalysis = None
 
 def background_thread():
@@ -61,7 +62,7 @@ def background_thread():
         socketio.emit('serverUpdate', jsonResponse, namespace=namespace)
         
 def MakeServerResponse():
-    #Import eyeblink object state to push to server
+    #Import dtsc object state to push to server
     now = datetime.now()
     dateStr = now.strftime("%m/%d/%y")
     timeStr = now.strftime("%H:%M:%S.%f")
@@ -70,20 +71,20 @@ def MakeServerResponse():
     response['currentdate'] = dateStr
     response['currenttime'] = timeStr
 
-    response['savepath'] = myeyeblink.savepath
-    response['animalID'] = myeyeblink.animalID
+    response['savepath'] = mydtsc.savepath
+    response['animalID'] = mydtsc.animalID
 
-    response['filePath'] = myeyeblink.trial['filePath']
-    response['fileName'] = myeyeblink.trial['fileName']
+    response['filePath'] = mydtsc.trial['filePath']
+    response['fileName'] = mydtsc.trial['fileName']
 
-    response['trialRunning'] = myeyeblink.trialRunning
-    response['sessionNumber'] = myeyeblink.trial['sessionNumber']
-    response['sessionDur'] = myeyeblink.trial['sessionDur']
+    response['trialRunning'] = mydtsc.trialRunning
+    response['sessionNumber'] = mydtsc.trial['sessionNumber']
+    response['sessionDur'] = mydtsc.trial['sessionDur']
 
-    response['trialNumber'] = myeyeblink.trial['trialNumber']
-    response['numTrial'] = myeyeblink.trial['numTrial']
+    response['trialNumber'] = mydtsc.trial['trialNumber']
+    response['numTrial'] = mydtsc.trial['numTrial']
 
-    response['useMotor'] = myeyeblink.trial['useMotor']
+    response['useMotor'] = mydtsc.trial['useMotor']
 
     return response
     
@@ -95,7 +96,7 @@ def index():
         thread = Thread(target=background_thread)
         thread.daemon  = True; #as a daemon the thread will stop when *this stops
         thread.start()
-    theRet = render_template('indexE2.html', eyeblink=myeyeblink)
+    theRet = render_template('indexE2.html', dtsc=mydtsc)
     return theRet
 
 @app.route('/form2')
@@ -142,24 +143,24 @@ def connectArduino(message):
 @socketio.on('startarduinoButtonID', namespace=namespace) #
 def startarduinoButton(message):
     print('startarduinoButtonID')
-    myeyeblink.startSession()
+    mydtsc.startSession()
     
 @socketio.on('stoparduinoButtonID', namespace=namespace) #
 def stoparduinoButtonID(message):
     print('stoparduinoButtonID')
-    myeyeblink.stopSession()
+    mydtsc.stopSession()
     
 @socketio.on('printArduinoStateID', namespace=namespace) #
 def printArduinoStateID(message):
-    myeyeblink.GetArduinoState()
+    mydtsc.GetArduinoState()
 
 @socketio.on('emptySerialID', namespace=namespace) #
 def printArduinoStateID(message):
-    myeyeblink.emptySerial()
+    mydtsc.emptySerial()
 
 @socketio.on('checkserialportID', namespace=namespace) #
 def checkserialportID(message):
-    exists, str = myeyeblink.checkserialport()
+    exists, str = mydtsc.checkserialport()
     if exists:
         emit('serialdata', {'data': "OK: " + str})
     else:
@@ -168,7 +169,7 @@ def checkserialportID(message):
 @socketio.on('setSerialPortID', namespace=namespace) #
 def setSerialPort(message):
     portStr = message['data']
-    ok = myeyeblink.setserialport(portStr)
+    ok = mydtsc.setserialport(portStr)
     if ok:
         emit('serialdata', {'data': "OK: " + portStr})
     else:
@@ -176,7 +177,7 @@ def setSerialPort(message):
 
 @socketio.on('arduinoVersionID', namespace=namespace) #
 def arduinoVersionID(message):
-    myeyeblink.checkarduinoversion()
+    mydtsc.checkarduinoversion()
 
 @socketio.on('my event', namespace=namespace) #responds to echo
 def test_message(message):
@@ -192,12 +193,12 @@ def test_connect():
 
 @socketio.on('disconnect', namespace=namespace)
 def test_disconnect():
-    print('*** eyeblink_app -- Client disconnected')
+    print('*** dtsc_app -- Client disconnected')
 
 @socketio.on('trialform', namespace=namespace)
 def trialform(message):
-    '''message is trailFormDict from eyeblink object'''
-    print('\n=== eyeblink_app.trialform:', message)
+    '''message is trailFormDict from dtsc object'''
+    print('\n=== dtsc_app.trialform:', message)
     numTrial = message['numTrial']
     trialDur = message['trialDur']
 
@@ -215,34 +216,34 @@ def trialform(message):
     
     emit('serialdata', {'data': "=== Session Form ==="})
     
-    myeyeblink.settrial('numTrial', numTrial)
+    mydtsc.settrial('numTrial', numTrial)
     time.sleep(0.01)
-    myeyeblink.settrial('trialDur', trialDur)
-    time.sleep(0.01)
-
-    myeyeblink.settrial('interTrialIntervalLow', interTrialIntervalLow)
-    time.sleep(0.01)
-    myeyeblink.settrial('interTrialIntervalHigh', interTrialIntervalHigh)
-    time.sleep(0.01)
-    myeyeblink.settrial('preCSdur', preCSdur)
-    time.sleep(0.01)
-    myeyeblink.settrial('CSdur', CSdur)
-    time.sleep(0.01)
-    myeyeblink.settrial('USdur', USdur)
-    time.sleep(0.01)
-    myeyeblink.settrial('percentUS', percentUS)
-    time.sleep(0.01)
-    myeyeblink.settrial('percentCS', percentCS)
+    mydtsc.settrial('trialDur', trialDur)
     time.sleep(0.01)
 
-    myeyeblink.settrial('motorSpeed', motorSpeed)
+    mydtsc.settrial('interTrialIntervalLow', interTrialIntervalLow)
     time.sleep(0.01)
-    myeyeblink.settrial('useMotor', useMotor)
+    mydtsc.settrial('interTrialIntervalHigh', interTrialIntervalHigh)
+    time.sleep(0.01)
+    mydtsc.settrial('preCSdur', preCSdur)
+    time.sleep(0.01)
+    mydtsc.settrial('CSdur', CSdur)
+    time.sleep(0.01)
+    mydtsc.settrial('USdur', USdur)
+    time.sleep(0.01)
+    mydtsc.settrial('percentUS', percentUS)
+    time.sleep(0.01)
+    mydtsc.settrial('percentCS', percentCS)
     time.sleep(0.01)
 
-    myeyeblink.updatetrial() #update total dur
+    mydtsc.settrial('motorSpeed', motorSpeed)
+    time.sleep(0.01)
+    mydtsc.settrial('useMotor', useMotor)
+    time.sleep(0.01)
+
+    mydtsc.updatetrial() #update total dur
     
-    myeyeblink.emptySerial()
+    mydtsc.emptySerial()
     
     print('trialform() useMotor=', useMotor)
     
@@ -252,15 +253,15 @@ def trialform(message):
 def animalform(message):
     print('animalform:', message)
     animalID = message['animalID']
-    myeyeblink.animalID = animalID
+    mydtsc.animalID = animalID
     #mytreadmill.settrial('dur', dur)
     emit('my response', {'data': "animal id is now '" + animalID + "'"})
 
 
 def sig_handler(signal,frame):
-    print('Signal handler called by eyeblink_app.py')
-    myeyeblink.__del__
-    print('Process kill applied to eyeblinkCamera subprocess')
+    print('Signal handler called by dtsc_app.py')
+    mydtsc.__del__
+    print('Process kill applied to piCamera subprocess')
     os.system("pkill -9 -f puffCamera2_0.py")
     sys.exit(0)
 
@@ -269,11 +270,11 @@ if __name__ == '__main__':
         #Make kill method for all processes and threads
         signal.signal(signal.SIGINT, sig_handler)
 
-        #Initializing the eyeblink object
-        myeyeblink = eyeblink()
+        #Initializing the dtsc object
+        mydtsc = dtsc()
         #dataRoot = os.path.join(savepath) + '/'
-        #myeyeblink.setsavepath(dataRoot)
-        myeyeblink.bAttachSocket(socketio)
+        #mydtsc.setsavepath(dataRoot)
+        mydtsc.bAttachSocket(socketio)
 
         #Reporting server state on connection
         print('starting server')

@@ -36,7 +36,7 @@ if not os.path.exists(savePath):
 GPIO.setwarnings(False)
 GPIO.cleanup()
 GPIO.setmode(GPIO.BCM)
-on_pin = 27 #Note there is no BCM GPIO pin 27 on RPi4's, use 25
+on_pin = 25 #
 GPIO.setup(on_pin,GPIO.IN,pull_up_down=GPIO.PUD_DOWN)
 
 #####Setting up HTML page appearance

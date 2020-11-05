@@ -3,16 +3,16 @@ Joey Broussard
 PNI
 
 20191106
-eyeblink
+dtsc
 
-this is a master driver to run an eyeblink experiment
+this is a master driver to run a dtsc experiment
 this is NOT implemented to be a slave
 
 if on Raspberry, using
     - serial to trigger a session/trial
     - serial for event logging
     - serial to stop a trial
-    - I2C in arduino code to control treadmill state
+    - I2C in arduino code to control DTSC stimulus state
     
 todo:
     
@@ -67,7 +67,7 @@ trial['CS_USinterval'] = trial['CSdur'] - trial['USdur']
 #end options
 #
             
-class eyeblink():
+class dtsc():
     def __init__(self):
         self.animalID = 'default'
         self.trial = trial
@@ -85,11 +85,11 @@ class eyeblink():
             except:
                 self.ser = None
                 print "======================================================"
-                print "ERROR: treadmill did not find serial port '", options['serial']['port'], "'"
+                print "ERROR: DTSC did not find serial port '", options['serial']['port'], "'"
                 print "======================================================"
 
         if options['picamera']:
-            print 'treadmill is using raspberry pi camera'
+            print 'DTSC is using raspberry pi camera'
                 
         #serial is blocking. we need our trial to run in a separate thread so we do not block user interface
         self.trialRunning = 0
@@ -103,7 +103,7 @@ class eyeblink():
         
         self.arduinoStateList = None #grab from arduino at start of trial, write into each epoch file
         
-        print 'eyeblink.trial:', self.trial
+        print 'dtsc.trial:', self.trial
         
     def background_thread(self):
         '''Background thread to continuously read serial. Used during a trial.'''
@@ -117,7 +117,7 @@ class eyeblink():
 
 
     def bAttachSocket(self, socketio):
-        print 'eyeblink.bAttachSocket() attaching socketio:', socketio
+        print 'dtsc.bAttachSocket() attaching socketio:', socketio
         self.socketio = socketio
 
     def NewSerialData(self, str):
@@ -140,14 +140,14 @@ class eyeblink():
                     parts = str.split(',')
                     if len(parts) > 1:
                         if parts[1] == 'startSession':
-                            print '--->>> eyeblink.NewSerialData() is starting session'
+                            print '--->>> dtsc.NewSerialData() is starting session'
                             self.startSession()
                         if parts[1] == 'stopSession':
-                            print '--->>> eyeblink.NewSerialData() is stopping session'
+                            print '--->>> dtsc.NewSerialData() is stopping session'
                             self.stopSession()
         except:
             print "=============="
-            print "ERROR: eyeblink.NewSerialData()"
+            print "ERROR: dtsc.NewSerialData()"
             print "=============="
 
     def startSession(self):
@@ -167,7 +167,7 @@ class eyeblink():
         c = subprocess.check_output(["/opt/vc/bin/vcgencmd","get_camera"])
         int(c.strip()[-1])
         if (c):
-            print("eyeblink initialized picamera")
+            print("dtsc initialized picamera")
             #Calling picamera with system arguments(savepath,animalID,sessionNumber)
             os.system("python3 puffCamera2_0.py "+\
                 self.trial['filePath']+" "+\
@@ -182,7 +182,7 @@ class eyeblink():
         self.ser.write('startSession\n')
         self.trialRunning = 1
 
-        print 'eyeblink.startSession()'
+        print 'dtsc.startSession()'
         
         return 1
         
@@ -211,7 +211,7 @@ class eyeblink():
         if self.socketio:
             self.socketio.emit('serialdata', {'data': "=== Stop Session " + str(self.trial['sessionNumber']) + " ==="})
 
-        print 'eyeblink.stopSession()'
+        print 'dtsc.stopSession()'
         
     def newtrialfile(self, trialNumber):
         # open a file for this trial
@@ -272,15 +272,15 @@ class eyeblink():
             return 0
 
         val = str(val)
-        print "=== eyeblink.settrial() key:'" + key + "' val:'" + val + "'"
+        print "=== dtsc.settrial() key:'" + key + "' val:'" + val + "'"
         if key in self.trial:
             self.trial[key] = val
             serialCommand = 'settrial,' + key + ',' + val 
             serialCommand = str(serialCommand)
-            print "\teyeblink.settrial() writing to serial '" + serialCommand + "'"
+            print "\tdtsc.settrial() writing to serial '" + serialCommand + "'"
             self.ser.write(serialCommand + '\n')
         else:
-            print '\tERROR: eyeblink:settrial() did not find', key, 'in trial dict'
+            print '\tERROR: dtsc:settrial() did not find', key, 'in trial dict'
 
     def updatetrial(self):
         numTrial = long(self.trial['numTrial'])
@@ -358,4 +358,4 @@ class eyeblink():
         self.savepath = str
         
     def __del__(self):
-        print('Eyeblink object terminated by destructor method')
+        print('dtsc object terminated by destructor method')

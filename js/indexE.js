@@ -316,8 +316,8 @@
             selected : 100
         },
         title: {
-            //text: 'Eyeblink Trial'
-            text: 'Eyeblink Trial'
+            //text: 'dtsc Trial'
+            text: 'dtsc Trial'
         },
 		credits: {
 			  enabled: false

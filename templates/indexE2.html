@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-    <title>Eyeblink Experiment</title>
+    <title>dtsc Experiment</title>
     <script type="text/javascript" src="static/jquery-2.2.1.min.js"></script>
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
 
@@ -35,19 +35,19 @@
 			$.getScript('js/indexE.js');
 
 			//set defaults in form
-			$('#numTrialID').attr("value", "{{ eyeblink.trial['numTrial'] }}");
-			$('#trialDurID').attr("value", "{{ eyeblink.trial['trialDur'] }}");
+			$('#numTrialID').attr("value", "{{ dtsc.trial['numTrial'] }}");
+			$('#trialDurID').attr("value", "{{ dtsc.trial['trialDur'] }}");
 
-			$('#interTrialIntervalLowID').attr("value", "{{ eyeblink.trial['interTrialIntervalLow'] }}");
-			$('#interTrialIntervalHighID').attr("value", "{{ eyeblink.trial['interTrialIntervalHigh'] }}");
-			$('#preCSdurID').attr("value", "{{ eyeblink.trial['preCSdur'] }}");
-			$('#CSdurID').attr("value", "{{ eyeblink.trial['CSdur'] }}");
-			$('#USdurID').attr("value", "{{ eyeblink.trial['USdur'] }}");
-			$('#percentUSID').attr("value", "{{ eyeblink.trial['percentUS'] }}");
-			$('#percentCSID').attr("value", "{{ eyeblink.trial['percentCS'] }}");
+			$('#interTrialIntervalLowID').attr("value", "{{ dtsc.trial['interTrialIntervalLow'] }}");
+			$('#interTrialIntervalHighID').attr("value", "{{ dtsc.trial['interTrialIntervalHigh'] }}");
+			$('#preCSdurID').attr("value", "{{ dtsc.trial['preCSdur'] }}");
+			$('#CSdurID').attr("value", "{{ dtsc.trial['CSdur'] }}");
+			$('#USdurID').attr("value", "{{ dtsc.trial['USdur'] }}");
+			$('#percentUSID').attr("value", "{{ dtsc.trial['percentUS'] }}");
+			$('#percentCSID').attr("value", "{{ dtsc.trial['percentCS'] }}");
 			//
 			//motorOn
-			var useMotor = "{{eyeblink.trial['useMotor']}}"; //{motorOn, motorLocked, motorFree}
+			var useMotor = "{{dtsc.trial['useMotor']}}"; //{motorOn, motorLocked, motorFree}
 			//console.log('useMotor=', useMotor)
 			var $radios = $('input:radio[name=motorRadio]');
 			if (useMotor=='motorOn') {
@@ -58,7 +58,7 @@
 				$radios.filter('[value=motorFree]').prop('checked', true);
 			}
 						
-			$('#motorSpeedID').attr("value", "{{ eyeblink.trial['motorSpeed'] }}");
+			$('#motorSpeedID').attr("value", "{{ dtsc.trial['motorSpeed'] }}");
 
 		}); //$(document).ready(function(){
     </script>

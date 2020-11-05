@@ -5,8 +5,8 @@
  * 
  * V1.0 - rewritten from eyeblink3_4 to interface with DTSC_US and
  *  eyeblink_app.py
- * V1.1 - added pre-CS backing catch, inter-trial waits on motion
- * todo: -
+ * V1.1 - added pre-CS backing catch
+ * todo: - add inter-trial motion detection, maybe running-triggered US
  */
  
 #include "Arduino.h"
@@ -14,8 +14,6 @@
 #include <Encoder.h> // http://www.pjrc.com/teensy/td_libs_Encoder.html
 
 /////////////////////////////////////////////////////////////
-//////Making sure puffPin is set LOW as it's not used here
-int puffPin = 5;
 /*Structure and state definitions*/
 //Defining trial structure with associated attributes
 struct trial
@@ -159,10 +157,13 @@ void setup()
   ledCS.isOnLED = false;
   pinMode(ledCS.ledPin,OUTPUT);
   digitalWrite(ledCS.ledPin,LOW);
-  DTSC_US.DTSCPin = 12;
+  DTSC_US.DTSCPin = 5;
   DTSC_US.isOnDTSC = false;
   pinMode(DTSC_US.DTSCPin,OUTPUT);
   digitalWrite(DTSC_US.DTSCPin,LOW);
+
+  //give random seed to random number generator from analog 0
+  randomSeed(analogRead(0));
   
   //Initialize serial
   Serial.begin(115200);
@@ -240,11 +241,12 @@ void startTrial(unsigned long now){
 void stopTrial(unsigned long now) {
   //If this is the last trial, end session
   if (trial.currentTrial == trial.numTrial) {
-  stopSession(now);
+    stopSession(now);
   }
   trial.trialIsRunning = false;
   digitalWrite(trial.trialPin,LOW);
   serialOut(now, "stopTrial", trial.currentTrial);
+  
   //Set time to wait until next trial starts
   interTrialInterval = random(trial.interTrialIntervalLow,trial.interTrialIntervalHigh);
   trial.ITIstartMillis = now;
@@ -267,11 +269,6 @@ void stopSession(unsigned long now) {
   digitalWrite(trial.trialPin,LOW);
   trial.sessionNumber += 1;
 	trial.currentTrial = 0;
-  
-  
-  //I currently don't expect to have to change DTSC wheel, 
-  //but check this
-
 
 }
 /////////////////////////////////////////////////////////////
@@ -534,9 +531,7 @@ void loop()
   updateLED(now);
 
   updateDTSC(now);
-
-//  updateTrialPin(now);
   
-  delayMicroseconds(300); //ms
+  delayMicroseconds(300); //us
 
 }
