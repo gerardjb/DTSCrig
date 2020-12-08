@@ -23,7 +23,7 @@ import json
 import sys
 import signal
 import subprocess
-from settings import APP_ROOT
+import netifaces as ni
 
 from dtsc import dtsc
 from settings import APP_ROOT
@@ -278,8 +278,10 @@ if __name__ == '__main__':
 
         #Reporting server state on connection
         print('starting server')
-        #host settings in 'this' namespace location if desired here
-        socketio.run(app, host='169.254.67.160', port=5010, use_reloader=True)
+        #Get the eth0 ip address and serve socket from here
+        ni.ifaddresses('eth0')
+        ip = ni.ifaddresses('eth0')[ni.AF_INET][0]['addr']
+        socketio.run(app, host=ip, port=5010, use_reloader=True)
         print('finished')
     except:
         print('...exiting')
