@@ -165,8 +165,6 @@ void setup()
   digitalWrite(13,LOW);
 
   //CS/US structure and pin settings, intially at Arduino grnd
-  pinMode(puffPin,OUTPUT);
-  digitalWrite(puffPin,LOW);
   ledCS.ledPin = 4;
   ledCS.isOnLED = false;
   pinMode(ledCS.ledPin,OUTPUT);
@@ -532,6 +530,17 @@ void updateDTSC(unsigned long now){
 
 /*Motion Detection functions*/
 //For CS-US motion detection
+void SignalAup(){
+  if (digitalRead(10) == LOW)
+  {
+    attack++;
+  }
+  else
+  {
+    attack--;
+  }
+}
+
 void SignalAdown(){
   if (digitalRead(10) == HIGH)
   {
@@ -589,7 +598,7 @@ void HandleInterrupt(){
   }
   if (num_consec_interrupts > 3)  //significant movement criteria is met
   {
-    previousMillis = currentMillis;
+    previousQuiet = currentQuiet;
     num_consec_interrupts = 0;
     last_interrupt_time = interrupt_time;
   }
