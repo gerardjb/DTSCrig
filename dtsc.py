@@ -169,7 +169,7 @@ class dtsc():
         if (c):
             print("dtsc initialized picamera")
             #Calling picamera with system arguments(savepath,animalID,sessionNumber)
-            os.system("python3 puffCamera2_0.py "+\
+            os.system("python3 piCamera2_0.py "+\
                 self.trial['filePath']+" "+\
                 self.animalID+" "+\
                 str(self.trial['sessionNumber'])+\
