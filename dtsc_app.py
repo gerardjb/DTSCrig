@@ -262,7 +262,7 @@ def sig_handler(signal,frame):
     print('Signal handler called by dtsc_app.py')
     mydtsc.__del__
     print('Process kill applied to piCamera subprocess')
-    os.system("pkill -9 -f puffCamera2_0.py")
+    os.system("pkill -9 -f piCamera2_0.py")
     sys.exit(0)
 
 if __name__ == '__main__':
