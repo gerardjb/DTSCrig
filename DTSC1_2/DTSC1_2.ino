@@ -122,14 +122,18 @@ Encoder myEncoder(rotaryencoder.pinA, rotaryencoder.pinB);
 /////////////////////////////////////////////////////////////
 /*Setup, mostly declaring default structure values*/
 void setup()
-{
+{ 
+  //Initialize serial
+  SerialUSB.begin(115200);
+  while(!SerialUSB);
+  
   //trial
   trial.sessionIsRunning = false;
   trial.sessionNumber = 0;
   trial.sessionStartMillis = 0;
 
   trial.trialIsRunning = false;
-  trial.trialDur = 1000; // epoch has to be >= (preDur + xxx + postDur)
+  trial.trialDur = 3000; // epoch has to be >= (preDur + xxx + postDur)
   trial.numTrial = 1;
   
   trial.sessionDur = (trial.numTrial*trial.trialDur); //
@@ -137,7 +141,7 @@ void setup()
   trial.useMotor = 0; //0 = motorOn, 1 = motorLocked, 2 = motorFree
   trial.motorSpeed = 500; //step/sec
 
-  trial.preCSdur = 3000;
+  trial.preCSdur = 1000;
   trial.CSdur = 350;
   trial.USdur = 50;
   trial.CS_USinterval = trial.CSdur - trial.USdur;
@@ -165,8 +169,6 @@ void setup()
   digitalWrite(13,LOW);
 
   //CS/US structure and pin settings, intially at Arduino grnd
-  pinMode(puffPin,OUTPUT);
-  digitalWrite(puffPin,LOW);
   ledCS.ledPin = 4;
   ledCS.isOnLED = false;
   pinMode(ledCS.ledPin,OUTPUT);
@@ -179,8 +181,7 @@ void setup()
   //give random seed to random number generator from analog 0
   randomSeed(analogRead(0));
   
-  //Initialize serial
-  SerialUSB.begin(115200);
+  
 
   //Initialize as I2C master
   Wire.begin();//join I2C bus with no given address you master, you
@@ -256,6 +257,7 @@ void stopTrial(unsigned long now) {
   //If this is the last trial, end session
   if (trial.currentTrial == trial.numTrial) {
     stopSession(now);
+    return;
   }
   trial.trialIsRunning = false;
   digitalWrite(trial.trialPin,LOW);
@@ -266,7 +268,7 @@ void stopTrial(unsigned long now) {
   trial.ITIstartMillis = now;
 	
 	//Make animal wait specified quiet period for next trial
-	attachInterrupt(digitalPinToInterrupt(2), HandleInterrupt, CHANGE);
+	attachInterrupt(digitalPinToInterrupt(10), HandleInterrupt, CHANGE);
 	quietCount = millis();
 	longQuietTime = quietCount + longQuietInterval;
 	currentQuiet = millis();
@@ -274,7 +276,7 @@ void stopTrial(unsigned long now) {
 	while (interMotionCatch&&quietCount<longQuietTime){
 		quietCount = millis();
 		currentQuiet = millis();
-		if(currentQuiet - previousQuiet < quietInterval){
+		if(currentQuiet - previousQuiet > quietInterval){
 			interMotionCatch = false;
 			unsigned long now = millis();
 			//Let me know if mouse was still coming into trial
@@ -286,7 +288,7 @@ void stopTrial(unsigned long now) {
 		//Let me know if mouse fidgeted during whole ITI
 		serialOut(now,"Fidgeted",trial.currentTrial+1);
 	}
-	detachInterrupt(digitalPinToInterrupt(2));
+	detachInterrupt(digitalPinToInterrupt(10));
 	interMotionCatch = true;
 	
   //sum ITIs so they can be counted towards total session time
@@ -308,6 +310,7 @@ void stopSession(unsigned long now) {
   digitalWrite(trial.trialPin,LOW);
   trial.sessionNumber += 1;
 	trial.currentTrial = 0;
+  
 
 }
 /////////////////////////////////////////////////////////////
@@ -335,6 +338,7 @@ void SerialIn(unsigned long now, String str) {
   if (str == "version") {
     SerialUSB.println("version=" + versionStr);
   } else if (str == "startSession") {
+    SerialUSB.println("Got start!");
     startSession(now);
   }
   else if (str == "stopSession") {
@@ -458,7 +462,7 @@ void updateEncoder(unsigned long now,bool inMotionCatch) {
     float diff = now - rotaryencoder.timer;
     
 		//update encoder output when specified difference reached
-    if (diff>=5){
+    if (diff>=100){
       float dist =  rotaryencoder.pos - posNow;
       serialOut(now, "rotary", dist);
       rotaryencoder.timer = now;
@@ -468,14 +472,16 @@ void updateEncoder(unsigned long now,bool inMotionCatch) {
 		
 		//Sum movement during CS_US interval then send attack
 		if (inMotionCatch && !transmitAttack && (stimPairType=="US"||stimPairType=="CS_US")){
-      attachInterrupt(digitalPinToInterrupt(rotaryencoder.pinA), SignalAup, RISING);
-			attachInterrupt(digitalPinToInterrupt(rotaryencoder.pinA), SignalAdown, FALLING);
-			attachInterrupt(digitalPinToInterrupt(rotaryencoder.pinB), SignalBup, RISING);
-			attachInterrupt(digitalPinToInterrupt(rotaryencoder.pinB), SignalBdown, FALLING);
+      attack = 0;
+      attachInterrupt(digitalPinToInterrupt(10), SignalAup, RISING);
+			attachInterrupt(digitalPinToInterrupt(10), SignalAdown, FALLING);
+			attachInterrupt(digitalPinToInterrupt(11), SignalBup, RISING);
+			attachInterrupt(digitalPinToInterrupt(11), SignalBdown, FALLING);
       transmitAttack = true;
+      serialOut(now,"gotAttack",trial.currentTrial);
     }else if (!inMotionCatch && transmitAttack && (stimPairType=="US"||stimPairType=="CS_US")){
       
-      if (attack >= 0){
+      if (attack >= -1){
         wireOut(1,1);//send big attack if animal didn't move back
 				DTSC_US.isOnDTSC = true;
 				serialOut(now,"bigUSon",trial.currentTrial);
@@ -486,11 +492,12 @@ void updateEncoder(unsigned long now,bool inMotionCatch) {
 				DTSC_US.isOnDTSC = true;
 				serialOut(now,"smallUSon",trial.currentTrial);
 				digitalWrite(DTSC_US.DTSCPin,HIGH);
+       serialOut(now,"attack",attack);
       }
       transmitAttack = false;
 			rotaryencoder.sumCS_US = 0;
-			detachInterrupt(digitalPinToInterrupt(rotaryencoder.pinA));
-			detachInterrupt(digitalPinToInterrupt(rotaryencoder.pinB));
+			detachInterrupt(digitalPinToInterrupt(10));
+			detachInterrupt(digitalPinToInterrupt(11));
     }
   }
   
@@ -532,6 +539,17 @@ void updateDTSC(unsigned long now){
 
 /*Motion Detection functions*/
 //For CS-US motion detection
+void SignalAup(){
+  if (digitalRead(10) == LOW)
+  {
+    attack++;
+  }
+  else
+  {
+    attack--;
+  }
+}
+
 void SignalAdown(){
   if (digitalRead(10) == HIGH)
   {
@@ -589,7 +607,7 @@ void HandleInterrupt(){
   }
   if (num_consec_interrupts > 3)  //significant movement criteria is met
   {
-    previousMillis = currentMillis;
+    previousQuiet = currentQuiet;
     num_consec_interrupts = 0;
     last_interrupt_time = interrupt_time;
   }
@@ -615,17 +633,11 @@ void loop()
     SerialIn(now, inString);
   }
 
-  //Stop at end of trialDur if trialIsRunning
-  if (now > (trial.trialStartMillis + trial.trialDur) && trial.trialIsRunning && trial.sessionIsRunning){
-    stopTrial(now);
-    //we set ITI inside stopTrial function
-  }
 
   //Start a trial at the end of the ITI period
   if (!trial.trialIsRunning && trial.sessionIsRunning){
     startTrial(now);
   }
-  
 
   //Updating all hardware components
   updateEncoder(now,inMotionCatch);
@@ -633,6 +645,13 @@ void loop()
   updateLED(now);
 
   updateDTSC(now);
+
+  //Stop at end of trialDur if trialIsRunning
+  if (now > (trial.trialStartMillis + trial.trialDur) && trial.trialIsRunning && trial.sessionIsRunning){
+    stopTrial(now);
+    //we set ITI inside stopTrial function
+  }
+  
   
   delayMicroseconds(300); //us
 
