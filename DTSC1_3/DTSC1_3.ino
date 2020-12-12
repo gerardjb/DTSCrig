@@ -6,7 +6,8 @@
  * V1.0 - rewritten from eyeblink3_4 to interface with DTSC_US and
  *  eyeblink_app.py
  * V1.1 - added pre-CS backing catch
- * V1.2 - Harmonized to Bonni lab approach including
+ * V1.2
+ * V1.3 - Harmonized to Bonni lab approach including
  *		- Inter-trial quiescence period required for trial to start with timeout
  *		- Only collecting motion during 50ms before US
  * 		- Use of interrupt attachment for motion-detection functions. Note that to	
