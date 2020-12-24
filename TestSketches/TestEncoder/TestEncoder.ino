@@ -25,13 +25,13 @@ void setup() {
   //
 
   //Initialize serial
-  SerialUSB.begin(115200);//high baud rate for rapid writing out
-  SerialUSB.println("Starting");
+  Serial.begin(115200);//high baud rate for rapid writing out
+  Serial.println("Starting");
 }
 
 //Outputting info over the serial port
 void serialOut(unsigned long now, signed long dist) {
-  SerialUSB.println(String(now) + ",rot," + String(dist));
+  Serial.println(String(now) + ",rot," + String(dist));
   //Serial.println(dist);
 };
 
@@ -48,7 +48,7 @@ void updateEncoder(unsigned long now) {
     
     float diff = now - rotaryencoder.count;
     
-    if (diff>=100){
+    if (diff>=5000){
       float dist =  rotaryencoder.pos - posNow;
       serialOut(now, dist);
       rotaryencoder.count = now;

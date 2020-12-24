@@ -125,8 +125,8 @@ Encoder myEncoder(rotaryencoder.pinA, rotaryencoder.pinB);
 void setup()
 { 
   //Initialize serial
-  SerialUSB.begin(115200);
-  while(!SerialUSB);
+  Serial.begin(115200);
+  while(!Serial);
   
   //trial
   trial.sessionIsRunning = false;
@@ -186,7 +186,9 @@ void setup()
 
   //Initialize as I2C master
   Wire.begin();//join I2C bus with no given address you master, you
- 
+
+  pinMode(9,OUTPUT);
+  digitalWrite(9,LOW);
 }
 
 /////////////////////////////////////////////////////////////
@@ -326,7 +328,7 @@ void wireOut(int state2change,int newStateVal){
 
 //Outputting info over the serial port
 void serialOut(unsigned long now, String str, signed long val) {
-  SerialUSB.println(String(now) + "," + str + "," + String(val));
+  Serial.println(String(now) + "," + str + "," + String(val));
 }
 
 //Respond to incoming commands over serial
@@ -337,9 +339,9 @@ void SerialIn(unsigned long now, String str) {
     return;
   }
   if (str == "version") {
-    SerialUSB.println("version=" + versionStr);
+    Serial.println("version=" + versionStr);
   } else if (str == "startSession") {
-    SerialUSB.println("Got start!");
+    Serial.println("Got start!");
     startSession(now);
   }
   else if (str == "stopSession") {
@@ -357,7 +359,7 @@ void SerialIn(unsigned long now, String str) {
     SetTrial(nameStr, valueStr);
   }
   else {
-    SerialUSB.println("SerialIn() did not handle: '" + str + "'");
+    Serial.println("SerialIn() did not handle: '" + str + "'");
   }
   trial.CS_USinterval = trial.CSdur - trial.USdur;
     
@@ -367,24 +369,24 @@ void SerialIn(unsigned long now, String str) {
 //This generates the headers for the output files
 void GetState() {
   //trial
-  SerialUSB.println("sessionNumber=" + String(trial.sessionNumber));
-  SerialUSB.println("sessionDur=" + String(trial.sessionDur));
+  Serial.println("sessionNumber=" + String(trial.sessionNumber));
+  Serial.println("sessionDur=" + String(trial.sessionDur));
 
-  SerialUSB.println("numTrial=" + String(trial.numTrial));
-  SerialUSB.println("trialDur=" + String(trial.trialDur));
-  SerialUSB.println("interTrialInteval=" + String(trial.interTrialIntervalLow) + String(trial.interTrialIntervalHigh)); 
+  Serial.println("numTrial=" + String(trial.numTrial));
+  Serial.println("trialDur=" + String(trial.trialDur));
+  Serial.println("interTrialInteval=" + String(trial.interTrialIntervalLow) + String(trial.interTrialIntervalHigh)); 
 
-  SerialUSB.println("preCSdur=" + String(trial.preCSdur));
-  SerialUSB.println("CSdur=" + String(trial.CSdur));
-  SerialUSB.println("USdur=" + String(trial.USdur));
-  SerialUSB.println("CS_USinterval=" + String(trial.CS_USinterval));
-  SerialUSB.println("percentUS=" + String(trial.percentUS));
-  SerialUSB.println("percentCS=" + String(trial.percentCS));
+  Serial.println("preCSdur=" + String(trial.preCSdur));
+  Serial.println("CSdur=" + String(trial.CSdur));
+  Serial.println("USdur=" + String(trial.USdur));
+  Serial.println("CS_USinterval=" + String(trial.CS_USinterval));
+  Serial.println("percentUS=" + String(trial.percentUS));
+  Serial.println("percentCS=" + String(trial.percentCS));
 
-  SerialUSB.println("useMotor=" + String(trial.useMotor));
-  SerialUSB.println("motorSpeed=" + String(trial.motorSpeed));
+  Serial.println("useMotor=" + String(trial.useMotor));
+  Serial.println("motorSpeed=" + String(trial.motorSpeed));
   
-  SerialUSB.println("versionStr=" + String(versionStr));
+  Serial.println("versionStr=" + String(versionStr));
 
 }
 
@@ -395,35 +397,35 @@ void SetTrial(String name, String strValue) {
   //trial
   if (name == "numTrial") {
     trial.numTrial = value;
-    SerialUSB.println("trial.numTrial=" + String(trial.numTrial));
+    Serial.println("trial.numTrial=" + String(trial.numTrial));
   } else if (name=="trialDur") {
     trial.trialDur = value;
-    SerialUSB.println("trial.trialDur=" + String(trial.trialDur));
+    Serial.println("trial.trialDur=" + String(trial.trialDur));
     
   } else if (name=="interTrialIntervalHigh") {
     trial.interTrialIntervalHigh = value;
-    SerialUSB.println("trial.interTrialIntervalHigh=" + String(trial.interTrialIntervalHigh));
+    Serial.println("trial.interTrialIntervalHigh=" + String(trial.interTrialIntervalHigh));
   } else if (name=="interTrialIntervalLow") {
     trial.interTrialIntervalLow = value;
-    SerialUSB.println("trial.interTrialIntervalLow=" + String(trial.interTrialIntervalLow));
+    Serial.println("trial.interTrialIntervalLow=" + String(trial.interTrialIntervalLow));
     
   } else if (name=="preCSdur") {
     trial.preCSdur = value;
-    SerialUSB.println("trial.preCSdur=" + String(trial.preCSdur));
+    Serial.println("trial.preCSdur=" + String(trial.preCSdur));
     
   } else if (name=="CSdur") {
     trial.CSdur = value;
-    SerialUSB.println("trial.CSdur=" + String(trial.CSdur));
+    Serial.println("trial.CSdur=" + String(trial.CSdur));
   } else if (name=="USdur") {
     trial.USdur = value;
-    SerialUSB.println("trial.USdur=" + String(trial.USdur));
+    Serial.println("trial.USdur=" + String(trial.USdur));
     
   } else if (name=="percentCS") {
     trial.percentCS = value;
-    SerialUSB.println("trial.percentCS=" + String(trial.percentCS));
+    Serial.println("trial.percentCS=" + String(trial.percentCS));
   } else if (name=="percentUS") {
     trial.percentUS = value;
-    SerialUSB.println("trial.percentUS=" + String(trial.percentUS));
+    Serial.println("trial.percentUS=" + String(trial.percentUS));
     
   } else if (name=="useMotor") {
     if (strValue=="motorOn") {//0 for forced run, 1 for locked, 2 for free run
@@ -433,16 +435,16 @@ void SetTrial(String name, String strValue) {
     } else if (strValue=="motorFree"){
       trial.useMotor = 2;
     }
-    SerialUSB.println("trial.useMotor=" + String(strValue));
+    Serial.println("trial.useMotor=" + String(strValue));
     /*I2C-directed*///0 for change motor sleep state
     wireOut(0,trial.useMotor);
   } else if (name=="motorSpeed") {
     trial.motorSpeed = value;
-    SerialUSB.println("trial.motorSpeed=" + String(trial.motorSpeed));
+    Serial.println("trial.motorSpeed=" + String(trial.motorSpeed));
     /*I2C-directed*/
     wireOut(1,trial.motorSpeed);
   }else {
-    SerialUSB.println("SetValue() did not handle '" + name + "'");
+    Serial.println("SetValue() did not handle '" + name + "'");
   }
   
 }
@@ -463,7 +465,7 @@ void updateEncoder(unsigned long now,bool inMotionCatch) {
     float diff = now - rotaryencoder.timer;
     
 		//update encoder output when specified difference reached
-    if (diff>=100){
+    if (diff>=5){
       float dist =  rotaryencoder.pos - posNow;
       serialOut(now, "rotary", dist);
       rotaryencoder.timer = now;
@@ -474,19 +476,20 @@ void updateEncoder(unsigned long now,bool inMotionCatch) {
 		//Sum movement during CS_US interval then send attack
 		if (inMotionCatch && !transmitAttack && (stimPairType=="US"||stimPairType=="CS_US")){
       attack = 0;
-      attachInterrupt(digitalPinToInterrupt(10), SignalAup, RISING);
-			attachInterrupt(digitalPinToInterrupt(10), SignalAdown, FALLING);
-			attachInterrupt(digitalPinToInterrupt(11), SignalBup, RISING);
-			attachInterrupt(digitalPinToInterrupt(11), SignalBdown, FALLING);
+      attachInterrupt(digitalPinToInterrupt(8), SignalAup, RISING);
+			attachInterrupt(digitalPinToInterrupt(8), SignalAdown, FALLING);
+			attachInterrupt(digitalPinToInterrupt(10), SignalBup, RISING);
+			attachInterrupt(digitalPinToInterrupt(10), SignalBdown, FALLING);
       transmitAttack = true;
       serialOut(now,"gotAttack",trial.currentTrial);
     }else if (!inMotionCatch && transmitAttack && (stimPairType=="US"||stimPairType=="CS_US")){
       
-      if (attack >= -1){
+      if (attack >= 0){
         wireOut(1,1);//send big attack if animal didn't move back
 				DTSC_US.isOnDTSC = true;
 				serialOut(now,"bigUSon",trial.currentTrial);
 				digitalWrite(DTSC_US.DTSCPin,HIGH);
+        serialOut(now,"attack",attack);
 				
       }else{
         wireOut(1,0);//send little attack if animal moved back
@@ -497,8 +500,8 @@ void updateEncoder(unsigned long now,bool inMotionCatch) {
       }
       transmitAttack = false;
 			rotaryencoder.sumCS_US = 0;
+			detachInterrupt(digitalPinToInterrupt(8));
 			detachInterrupt(digitalPinToInterrupt(10));
-			detachInterrupt(digitalPinToInterrupt(11));
     }
   }
   
@@ -606,7 +609,7 @@ void HandleInterrupt(){
     num_consec_interrupts = 0;
     last_interrupt_time = interrupt_time;
   }
-  if (num_consec_interrupts > 3)  //significant movement criteria is met
+  if (num_consec_interrupts > 5)  //significant movement criteria is met
   {
     previousQuiet = currentQuiet;
     num_consec_interrupts = 0;
@@ -627,8 +630,8 @@ void loop()
 	inMotionCatch = (msIntoTrial > (trial.preCSdur + trial.CS_USinterval - motionCatchDur)) && (msIntoTrial < (trial.preCSdur + trial.CS_USinterval));
   inCS_USint = (msIntoTrial > trial.preCSdur) && (msIntoTrial < (trial.preCSdur + trial.CS_USinterval));
   
-  if (SerialUSB.available() > 0) {
-    String inString = SerialUSB.readStringUntil('\n');
+  if (Serial.available() > 0) {
+    String inString = Serial.readStringUntil('\n');
     inString.replace("\n","");
     inString.replace("\r","");
     SerialIn(now, inString);
