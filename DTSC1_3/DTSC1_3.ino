@@ -12,6 +12,11 @@
  *		- Only collecting motion during 50ms before US
  * 		- Use of interrupt attachment for motion-detection functions. Note that to	
  *			run in parallel with Encoder library, need Arduino Due
+ * V2.0 - Broke out trial and 2P acquisition pins to allow asynchronous 
+ *				activation to allow baseline acquisition during uncertain trial starts
+ *		- Allowed full write of rotary encoder data during ITIs
+ *		- Reworked the ISI motion-catch variables into relevnat structures to
+ *			allow in-loop updates to states including in ITIs
  */
  
 #include "Arduino.h"
