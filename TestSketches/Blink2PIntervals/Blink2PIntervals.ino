@@ -13,10 +13,9 @@
  */
 
 int tPin = 13; //current scanimage trigger pin
-int ct = 5; //limit total number of loops
-int reps = 2; //number of repititions per trialLen in each ct
+int ct = 0; //limit total number of loops
 int timer = 100; //rest between scanimage acquisition loops
-long trialLen[] = {100,3000,9000};
+long trialLen[] = {3000,9000,100,9000}; //array of TTL lengths
 
 void setup() {
   // Set current scanimage interaction pin
@@ -25,23 +24,44 @@ void setup() {
 
   //Serial
   Serial.begin(9600);
+  delay(1000);
+}
+
+void SerialIn(String str){
+  if (str.length()==0){
+    return;
+  }
+  if (str == "go"){
+    ct = 5;
+  }else if (str == "stop"){
+    ct = 0;
+  }
 }
 
 void loop() {
   //Set of two of each trialLen per ct
-  delay(3000);
+  if (Serial.available()>0){
+    String inString = Serial.readStringUntil('\n');
+    inString.replace("\n","");
+    inString.replace("\r","");
+    SerialIn(inString);
+  }
   while(ct>0){
     for(int iLen = 0;iLen<sizeof(trialLen)/sizeof(trialLen[0]);iLen++){
-      for(int rep = 0;rep<reps;rep++){
-        Serial.println("length =" + String(trialLen[iLen]) + ", rep = " + String(rep));
-        Serial.println("count = " + String(ct));
-        digitalWrite(tPin,HIGH);
-        delay(trialLen[iLen]);
-        digitalWrite(tPin,LOW);
-        delay(timer);
+      Serial.println("length =" + String(trialLen[iLen]) + "count = " + String(ct));
+      digitalWrite(tPin,HIGH);
+      delay(trialLen[iLen]);
+      digitalWrite(tPin,LOW);
+      delay(timer);
+      if (Serial.available()>0){
+        String inString = Serial.readStringUntil('\n');
+        inString.replace("\n","");
+        inString.replace("\r","");
+        SerialIn(inString);
       }
     }
     ct--;
+    
   }
   
 }
