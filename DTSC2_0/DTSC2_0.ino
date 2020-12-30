@@ -541,7 +541,7 @@ void updateEncoder(unsigned long now) {
 				//circular permute array by 1 to right, then add latest motion
 				for(int i = rotaryencoder.lenDetect - 1;i>=0;i--){
 					if(i>0){rotaryencoder.motionArr[i] = rotaryencoder.motionArr[i-1];
-					}else{rotaryencoder.motionArr[i] = random(200)*0.01;//abs(rotaryencoder.diffPos);
+					}else{rotaryencoder.motionArr[i] = abs(rotaryencoder.diffPos);//random(180)*0.01;
 					}
 					rotaryencoder.sumMotion += rotaryencoder.motionArr[i];
 				}
