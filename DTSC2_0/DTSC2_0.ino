@@ -112,7 +112,7 @@ struct twoP
 {
 	boolean isOnTwoP; //
 	boolean turnOff = false; // goes true when rotary encoder motion conditions met
-	int twoPpin = 8; //pin for 2P activation
+	int twoPpin = 11; //pin for 2P activation
 	unsigned long twoPdownTime = 0; //minimum time between activation of 2P
 	unsigned long twoPdownInt = 20; //counting until minimum inter-2P activation interval reached
   boolean runTilTrial = false; // if true, don't shut off 2P until after trial
