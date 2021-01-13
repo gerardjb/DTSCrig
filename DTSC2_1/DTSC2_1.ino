@@ -103,6 +103,7 @@ struct rotaryencoder
 
 	//Track ITI motion
 	boolean notStill = false; // true if animal breaks fixation too frquently in ITI
+	boolean still = false; // true if animal keeps fixation during ITI
 	boolean isOnMotionCount = false; // true when traking ITI motion
   boolean resetMotionCount = true; // true if animal moved or we're starting motion tracking
 	const int lenDetect = 20; // ms rolling interval over which we track motion
@@ -117,7 +118,7 @@ struct twoP
 	boolean isOnTwoP = false; //
 	boolean toggleState = false;//
 	int twoPpin = 52; //pin for 2P activation
-	int fileChangePin = 53; //pin to change the file
+	int fileChangePin = 51; //pin to change the file
 	boolean fileChangeOn = false; // signal to make a file break
 	boolean changeFile = false; // goes true when rotary encoder motion conditions met
 	unsigned long fileChangeStart = 0; //minimum time between activation of 2P
@@ -311,9 +312,6 @@ void stopTrial(unsigned long now) {
   //Set time to wait until next trial starts
   trial.ITIstartMillis = now;
   trial.ITIstillStartMillis = now;
-	
-	//Instruct 2P to turn itself off
-	twoP.turnOff = true;
 	
   
 }
@@ -520,22 +518,22 @@ void updateEncoder(unsigned long now) {
 		if(!trial.trialIsRunning){
 			if(trial.msIntoITI>trial.ITIhigh - trial.ITIlow){	
 				if(!rotaryencoder.notStill){
-          serialOut(now,"flag1",trial.currentTrial);
+          serialOut(now,"notStill",trial.currentTrial);
 					rotaryencoder.notStill = true;
 					rotaryencoder.isOnMotionCount = false;
           trial.ITIstillStartMillis = now;
 					
 				//Reset 2P if we've reached that interval after animal hasn't been still; we'll turn off at stopTrial
-				}else if(rotaryencoder.notStill && trial.ITIhigh - trial.msIntoITI < twoP.preTrialImgDur && !twoP.turnOff && !twoP.runTilTrial){
-					serialOut(now,"flag2",trial.currentTrial);
-					twoP.turnOff = true;
+				}else if(rotaryencoder.notStill && trial.ITIhigh - trial.msIntoITI < twoP.preTrialImgDur && !twoP.changeFile && !twoP.runTilTrial){
+					//serialOut(now,"flag2",trial.currentTrial);
+					twoP.changeFile = true;
           twoP.runTilTrial = true;
 
 				}
 				
 			//Initialize motion detection	
 			}else if(rotaryencoder.resetMotionCount){
-        serialOut(now,"flag3",1);
+        //serialOut(now,"motionDetectOn",1);
 				rotaryencoder.isOnMotionCount = true;
 				rotaryencoder.resetMotionCount = false;
 				trial.ITIstillStartMillis = now;
@@ -555,33 +553,35 @@ void updateEncoder(unsigned long now) {
         //serialOut(now,"sumMotion",rotaryencoder.sumMotion);
         
 				//If motion above threshold, reset motion array
-				if(rotaryencoder.sumMotion>rotaryencoder.motionThresh && !twoP.turnOff){
-					serialOut(now,"flag4",trial.msIntoStillITI);
-          serialOut(now,"sumMotion",rotaryencoder.sumMotion);
+				if(rotaryencoder.sumMotion>rotaryencoder.motionThresh && !twoP.changeFile){
+					//serialOut(now,"flag4",trial.msIntoStillITI);
+          //serialOut(now,"Moved",rotaryencoder.sumMotion);
 					rotaryencoder.resetMotionCount = true;
 					twoP.changeFile = true;
           
           
 				//Otherwise start recording 2P when we reach ITIlow - preTrialImgDur
-				}else if(trial.ITIlow - trial.msIntoStillITI < twoP.preTrialImgDur && !twoP.turnOff){
-					serialOut(now,"flag5",1);
+				}else if(trial.ITIlow - trial.msIntoStillITI < twoP.preTrialImgDur && !twoP.changeFile){
+					serialOut(now,"Still",trial.currentTrial);
 					twoP.changeFile = true;
 					rotaryencoder.isOnMotionCount = false;
 					rotaryencoder.resetMotionCount = false;
+          rotaryencoder.still = true;
 
 				}
         rotaryencoder.sumMotion = 0;
 			}
 		//Clear flags at the end of the ITI
-		}else if(trial.trialIsRunning && (rotaryencoder.notStill || rotaryencoder.isOnMotionCount)){
-      serialOut(now,"flag6",1);
-      serialOut(now,"flag2crit",trial.ITIhigh - trial.msIntoITI);
+		}else if(trial.trialIsRunning && (rotaryencoder.notStill || rotaryencoder.still)){
+      //serialOut(now,"flag6",1);
+      //serialOut(now,"flag2crit",trial.ITIhigh - trial.msIntoITI);
 			if(rotaryencoder.notStill){
-				serialOut(now,"Moved",trial.currentTrial);
-			}else if(rotaryencoder.isOnMotionCount){
+				serialOut(now,"NotStill",trial.currentTrial);
+			}else if(rotaryencoder.still){
 				serialOut(now,"Still",trial.currentTrial);
 			}
 			rotaryencoder.notStill = false;
+      rotaryencoder.still = false;
 			rotaryencoder.isOnMotionCount = false;
 			rotaryencoder.resetMotionCount = true;
       twoP.runTilTrial = false;
@@ -636,14 +636,14 @@ void update2P(unsigned long now){
 	}else if(twoP.isOnTwoP && twoP.toggleState && trial.sessionIsRunning){
 		twoP.isOnTwoP = false;
 		digitalWrite(twoP.twoPpin,LOW);
-		serialOut(now,"2Poff",trial.currentTrial);
+		serialOut(now,"2Poff_",trial.currentTrial);
 		twoP.toggleState = false;
 	}
 	//Make a new file
 	if(twoP.isOnTwoP && twoP.changeFile && trial.sessionIsRunning){
 		twoP.changeFile = false;
 		digitalWrite(twoP.fileChangePin,HIGH);
-		serialOut(now,"newFile",trial.currentTrial);
+		//serialOut(now,"newFile",trial.currentTrial);
 		twoP.fileChangeStart = now;
 	}else if(twoP.isOnTwoP && now - twoP.fileChangeStart>twoP.fileChangeInt && trial.sessionIsRunning){
 		digitalWrite(twoP.fileChangePin,LOW);
