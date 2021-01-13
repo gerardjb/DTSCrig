@@ -182,7 +182,7 @@ void setup()
   trial.motorSpeed = 500; //step/sec
 
   trial.preCSdur = 1000;
-  trial.CSdur = 350;
+  trial.CSdur = 250;
   trial.USdur = 50;
   trial.CS_USinterval = trial.CSdur - trial.USdur;
   trial.CRcountDur = 50;
@@ -518,16 +518,17 @@ void updateEncoder(unsigned long now) {
 		if(!trial.trialIsRunning){
 			if(trial.msIntoITI>trial.ITIhigh - trial.ITIlow){	
 				if(!rotaryencoder.notStill){
-          serialOut(now,"notStill",trial.currentTrial);
+          serialOut(now,"notStillFlag",trial.currentTrial);
 					rotaryencoder.notStill = true;
 					rotaryencoder.isOnMotionCount = false;
           trial.ITIstillStartMillis = now;
 					
 				//Reset 2P if we've reached that interval after animal hasn't been still; we'll turn off at stopTrial
 				}else if(rotaryencoder.notStill && trial.ITIhigh - trial.msIntoITI < twoP.preTrialImgDur && !twoP.changeFile && !twoP.runTilTrial){
-					//serialOut(now,"flag2",trial.currentTrial);
+					serialOut(now,"notStillNewFile",trial.currentTrial);
 					twoP.changeFile = true;
           twoP.runTilTrial = true;
+          twoP.reportNew = true;
 
 				}
 				
@@ -558,12 +559,14 @@ void updateEncoder(unsigned long now) {
           //serialOut(now,"Moved",rotaryencoder.sumMotion);
 					rotaryencoder.resetMotionCount = true;
 					twoP.changeFile = true;
+          rotaryencoder.still = false;
           
           
 				//Otherwise start recording 2P when we reach ITIlow - preTrialImgDur
 				}else if(trial.ITIlow - trial.msIntoStillITI < twoP.preTrialImgDur && !twoP.changeFile){
-					serialOut(now,"Still",trial.currentTrial);
+					serialOut(now,"stillFlag",trial.currentTrial);
 					twoP.changeFile = true;
+          twoP.reportNew = true;
 					rotaryencoder.isOnMotionCount = false;
 					rotaryencoder.resetMotionCount = false;
           rotaryencoder.still = true;
@@ -636,15 +639,18 @@ void update2P(unsigned long now){
 	}else if(twoP.isOnTwoP && twoP.toggleState && trial.sessionIsRunning){
 		twoP.isOnTwoP = false;
 		digitalWrite(twoP.twoPpin,LOW);
-		serialOut(now,"2Poff_",trial.currentTrial);
+		serialOut(now,"2Poff",trial.currentTrial);
 		twoP.toggleState = false;
 	}
 	//Make a new file
-	if(twoP.isOnTwoP && twoP.changeFile && trial.sessionIsRunning){
+	if(twoP.isOnTwoP && twoP.changeFile && twoP.reportNew && trial.sessionIsRunning){
 		twoP.changeFile = false;
 		digitalWrite(twoP.fileChangePin,HIGH);
-		//serialOut(now,"newFile",trial.currentTrial);
+		serialOut(now,"newFile",trial.currentTrial);
 		twoP.fileChangeStart = now;
+	}else if(twoP.isOnTwoP && twoP.changeFile && !twoP.reportNew && trial.sessionIsRunning){
+    digitalWrite(twoP.fileChangePin,HIGH);
+    twoP.fileChangeStart = now;
 	}else if(twoP.isOnTwoP && now - twoP.fileChangeStart>twoP.fileChangeInt && trial.sessionIsRunning){
 		digitalWrite(twoP.fileChangePin,LOW);
 	}
