@@ -168,7 +168,7 @@ void setup()
 { 
   //Initialize serial
   Serial.begin(115200);
-  while(!Serial);
+  //while(!Serial);
   
   //trial
   trial.sessionIsRunning = false;
@@ -177,7 +177,7 @@ void setup()
 
   trial.trialIsRunning = false;
   trial.trialDur = 3000; // epoch has to be >= (preDur + xxx + postDur)
-  trial.numTrial = 1;
+  trial.numTrial = 5;
   
   trial.sessionDur = (trial.numTrial*trial.trialDur); //
 
@@ -205,7 +205,7 @@ void setup()
   rotaryencoder.pinB = 2;
 	//rotaryencoder.motionArr
   //
-
+  
   //CS/US structure and pin settings, intially at Arduino grnd
   ledCS.ledPin = 4;
   ledCS.isOnLED = false;
@@ -213,13 +213,15 @@ void setup()
   digitalWrite(ledCS.ledPin,LOW);
   DTSC_US.DTSCPin = 5;
   DTSC_US.isOnDTSC = false;
+  
   pinMode(DTSC_US.DTSCPin,OUTPUT);
   digitalWrite(DTSC_US.DTSCPin,LOW);
   pinMode(twoP.twoPpin,OUTPUT);
   digitalWrite(twoP.twoPpin,LOW);
   pinMode(twoP.fileChangePin,OUTPUT);
   digitalWrite(twoP.fileChangePin,LOW);
-
+  
+  
   //give random seed to random number generator from analog 0
   randomSeed(analogRead(0));
 
@@ -229,6 +231,7 @@ void setup()
 	//Set any pins used in other setups low
   pinMode(9,OUTPUT);
   digitalWrite(9,LOW);
+  
 }
 
 /////////////////////////////////////////////////////////////
@@ -542,7 +545,6 @@ void updateEncoder(unsigned long now) {
 					rotaryencoder.notStill = true;
 					rotaryencoder.isOnMotionCount = false;
           twoP.reportNew = false;
-          trial.ITIstillStartMillis = now;
 					
 				//Reset 2P if we've reached that interval after animal hasn't been still; we'll turn off at stopTrial
 				}else if(rotaryencoder.notStill && trial.ITIhigh - trial.msIntoITI < twoP.preTrialImgDur && !twoP.changeFile && !twoP.runTilTrial){
@@ -558,7 +560,6 @@ void updateEncoder(unsigned long now) {
         //serialOut(now,"motionDetectOn",1);
 				rotaryencoder.isOnMotionCount = true;
 				rotaryencoder.resetMotionCount = false;
-				trial.ITIstillStartMillis = now;
         rotaryencoder.sumMotion = 0;
 				//Initialize motion detection as 0's array
 				for(int i=0;i<rotaryencoder.lenDetect;i++){rotaryencoder.motionArr[i]=0;}
@@ -586,7 +587,7 @@ void updateEncoder(unsigned long now) {
           
 				//Otherwise start recording 2P when we reach ITIlow - preTrialImgDur
 				}else if(trial.ITIlow - trial.msIntoStillITI < twoP.preTrialImgDur && !twoP.changeFile && !rotaryencoder.still){
-					serialOut(now,"stillFlag",trial.currentTrial);
+					serialOut(now,"stillFlag",trial.currentTrial);//
 					twoP.changeFile = true;
           twoP.reportNew = true;
 					rotaryencoder.isOnMotionCount = false;
@@ -684,6 +685,7 @@ void update2P(unsigned long now){
 /*Loop*/
 void loop()
 {
+  
   //Counting for each session/trial/ITI
   unsigned long now = millis();
   trial.msIntoSession = now-trial.sessionStartMillis;
@@ -697,7 +699,7 @@ void loop()
   trial.inUS = (trial.msIntoTrial > trial.preCSdur + trial.CS_USinterval) && (trial.msIntoTrial < (trial.preCSdur + trial.CS_USinterval + trial.USdur));
 
   //Start a trial at the end of the ITI period
-  if (!trial.trialIsRunning && trial.sessionIsRunning  && (trial.msIntoITI>trial.ITIhigh || trial.msIntoStillITI>trial.ITIlow)){
+  if (!trial.trialIsRunning && trial.sessionIsRunning  && (trial.msIntoITI>trial.ITIhigh || (trial.msIntoStillITI>trial.ITIlow && rotaryencoder.still))){
     startTrial(now);
   }
 
@@ -720,6 +722,6 @@ void loop()
     SerialIn(now, inString);
   }
 	
-  delayMicroseconds(50); //us
-
+  delayMicroseconds(100); //us
+  
 }
