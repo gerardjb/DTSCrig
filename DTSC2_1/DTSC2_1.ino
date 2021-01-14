@@ -96,7 +96,7 @@ struct rotaryencoder
 	//for printing distance traveled at regular intervals
 	long printVal = 0; // value pronted ot csv
 	long printTime = 0; //counter for when to make next print
-	long printInterval = 14; //length of time between prints
+	long printInterval = 200; //length of time between prints
 	
 	//Track CR motion
 	boolean isOnCRcount = false; // on during CR detection
@@ -266,6 +266,8 @@ void startSession(unsigned long now) {
 
     trial.trialIsRunning = true;
 
+    rotaryencoder.currentPos = myEncoder.read();
+    
     //Calculate trial type
     unsigned int RNG = random(1,101);
     if (RNG <= trial.percentUS){
@@ -308,7 +310,7 @@ void startTrial(unsigned long now){
 //End trial
 void stopTrial(unsigned long now) {
   //If this is the last trial, end session
-  if (trial.currentTrial == trial.numTrial) {
+  if (trial.currentTrial == trial.numTrial-1) {
     stopSession(now);
     return;
   }
@@ -521,7 +523,7 @@ void updateEncoder(unsigned long now) {
 				if (rotaryencoder.CRcount >= rotaryencoder.CRthresh1){
 					wireOut(1,2);//send big attack if animal didn't move back
 					serialOut(now,"bigUSon",rotaryencoder.CRcount);				
-				}else if(rotaryencoder.CRcount >= rotaryencoder.CRthresh1){
+				}else if(rotaryencoder.CRcount >= rotaryencoder.CRthresh2){
           wireOut(1,1);//send med attack if animal moved back a little
           serialOut(now,"medUSon",rotaryencoder.CRcount); 
 				}else{
@@ -536,7 +538,7 @@ void updateEncoder(unsigned long now) {
 		if(!trial.trialIsRunning){
 			if(trial.msIntoITI>trial.ITIhigh - trial.ITIlow){	
 				if(!rotaryencoder.notStill){
-          //serialOut(now,"notStillFlag",trial.currentTrial);
+          serialOut(now,"notStillFlag",trial.currentTrial);
 					rotaryencoder.notStill = true;
 					rotaryencoder.isOnMotionCount = false;
           twoP.reportNew = false;
@@ -579,15 +581,16 @@ void updateEncoder(unsigned long now) {
 					twoP.changeFile = true;
           twoP.reportNew = false;
           rotaryencoder.still = false;
+          trial.ITIstillStartMillis = now;
           
           
 				//Otherwise start recording 2P when we reach ITIlow - preTrialImgDur
-				}else if(trial.ITIlow - trial.msIntoStillITI < twoP.preTrialImgDur && !twoP.changeFile){
+				}else if(trial.ITIlow - trial.msIntoStillITI < twoP.preTrialImgDur && !twoP.changeFile && !rotaryencoder.still){
 					serialOut(now,"stillFlag",trial.currentTrial);
 					twoP.changeFile = true;
           twoP.reportNew = true;
 					rotaryencoder.isOnMotionCount = false;
-					rotaryencoder.resetMotionCount = false;
+					rotaryencoder.resetMotionCount = true;
           rotaryencoder.still = true;
 
 				}
