@@ -27,6 +27,8 @@
  *		- Changed from 1 to 2 pins for 2P control
  *		- 2P now runs throughout session, with new files intialized where
  *			acq stop/starts were in V2.0
+ *    - Automatically activate and free motor at session beginning and end
+ *    - Implemented tiered US -> bigger CR = smaller US
  */
  
 #include "Arduino.h"
@@ -83,8 +85,8 @@ struct trial
 
 struct rotaryencoder
 {
-  int pinA = 2; // use pin 2 for A output
-  int pinB = 3; // use pin 3 for B output
+  int pinA = 3; // use pin 2 for A output
+  int pinB = 2; // use pin 3 for B output
 	//reading encoder
 	unsigned long time = 0; // keeps current time at milli precision to poll once per milli
 	long currentPos = 0; // instantaneous readout of encoder position
@@ -94,13 +96,13 @@ struct rotaryencoder
 	//for printing distance traveled at regular intervals
 	long printVal = 0; // value pronted ot csv
 	long printTime = 0; //counter for when to make next print
-	long printInterval = 500; //length of time between prints
+	long printInterval = 14; //length of time between prints
 	
 	//Track CR motion
 	boolean isOnCRcount = false; // on during CR detection
 	long CRcount = 0; // tracks wheel motion during CR detection
-	long CRthresh = -2; // sensitivity level for CR detection, lower number less sensitive
-
+	long CRthresh1 = -4; // sensitivity level for CR detection, lower number less sensitive
+  long CRthresh2 = -10; // sensitivity level for the very small bop
 	//Track ITI motion
 	boolean notStill = false; // true if animal breaks fixation too frquently in ITI
 	boolean still = false; // true if animal keeps fixation during ITI
@@ -109,7 +111,7 @@ struct rotaryencoder
 	const int lenDetect = 20; // ms rolling interval over which we track motion
 	long motionArr[20]; // array to hold detected motion over last lenDtect time bins
 	long sumMotion = 0; // sum of motionArr
-	long motionThresh = 4; // threshold for saying an animal moved
+	long motionThresh = 8; // threshold for saying an animal moved
 	
 };
 
@@ -123,7 +125,7 @@ struct twoP
 	boolean changeFile = false; // goes true when rotary encoder motion conditions met
   boolean reportNew = false; //
 	unsigned long fileChangeStart = 0; //minimum time between activation of 2P
-	unsigned long fileChangeInt = 1; //counting until minimum inter-2P activation interval reached
+	unsigned long fileChangeInt = 20; //counting until minimum inter-2P activation interval reached
   boolean runTilTrial = false; // if true, don't shut off 2P until after trial
 	unsigned long preTrialImgDur = 500; // pre-trial time to collect 2P data
 };
@@ -143,7 +145,7 @@ struct DTSC_US
 
 
 //Version, defining structures and aliases
-String versionStr = "DTSC2_0.cpp";
+String versionStr = "DTSC2_1.cpp";
 typedef struct trial Trial;
 typedef struct rotaryencoder RotaryEncoder;
 typedef struct twoP TwoP;
@@ -199,8 +201,8 @@ void setup()
   digitalWrite(trial.trialPin, LOW);
   
   //rotary encoder
-  rotaryencoder.pinA = 2;
-  rotaryencoder.pinB = 3;
+  rotaryencoder.pinA = 3;
+  rotaryencoder.pinB = 2;
 	//rotaryencoder.motionArr
   //
 
@@ -213,6 +215,10 @@ void setup()
   DTSC_US.isOnDTSC = false;
   pinMode(DTSC_US.DTSCPin,OUTPUT);
   digitalWrite(DTSC_US.DTSCPin,LOW);
+  pinMode(twoP.twoPpin,OUTPUT);
+  digitalWrite(twoP.twoPpin,LOW);
+  pinMode(twoP.fileChangePin,OUTPUT);
+  digitalWrite(twoP.fileChangePin,LOW);
 
   //give random seed to random number generator from analog 0
   randomSeed(analogRead(0));
@@ -309,6 +315,10 @@ void stopTrial(unsigned long now) {
   trial.trialIsRunning = false;
   digitalWrite(trial.trialPin,LOW);
   serialOut(now, "stopTrial", trial.currentTrial);
+
+  //Reset the 2P
+  twoP.changeFile = true;
+  twoP.reportNew = true;
   
   //Set time to wait until next trial starts
   trial.ITIstartMillis = now;
@@ -334,6 +344,10 @@ void stopSession(unsigned long now) {
 	serialOut(now,"2Poff",trial.currentTrial);
   trial.sessionNumber += 1;
 	trial.currentTrial = 0;
+
+  //I2C to inactivate slp pin DTSC wheel
+  wireOut(0,1);
+  Serial.println("Motor free");
   
 
 }
@@ -504,9 +518,12 @@ void updateEncoder(unsigned long now) {
 			serialOut(now,"CRcount",rotaryencoder.CRcount);
 			if((trial.stimPairType=="US"||trial.stimPairType=="CS_US")){
 				DTSC_US.armedDTSC = true;
-				if (rotaryencoder.CRcount >= rotaryencoder.CRthresh){
-					wireOut(1,1);//send big attack if animal didn't move back
+				if (rotaryencoder.CRcount >= rotaryencoder.CRthresh1){
+					wireOut(1,2);//send big attack if animal didn't move back
 					serialOut(now,"bigUSon",rotaryencoder.CRcount);				
+				}else if(rotaryencoder.CRcount >= rotaryencoder.CRthresh1){
+          wireOut(1,1);//send med attack if animal moved back a little
+          serialOut(now,"medUSon",rotaryencoder.CRcount); 
 				}else{
 					wireOut(1,0);//send little attack if animal moved back
 					serialOut(now,"smallUSon",rotaryencoder.CRcount);
