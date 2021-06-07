@@ -25,7 +25,7 @@ import signal
 import subprocess
 import netifaces as ni
 
-from dtsc import dtsc
+from dtsc2 import dtsc
 from settings import APP_ROOT
 
 #see: https://github.com/miguelgrinberg/Flask-SocketIO/issues/192

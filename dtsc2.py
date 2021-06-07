@@ -131,7 +131,7 @@ class dtsc():
         
     def background_thread(self):
         '''Background thread to continuously read serial. Used during a trial.'''
-		reader = ReadLine(self);
+        reader = ReadLine(self);
         while True:
             if self.trialRunning:
                 str = reader.radline()
