@@ -65,8 +65,33 @@ trial['sessionDur'] = trial['numTrial'] * trial['trialDur']
 trial['CS_USinterval'] = trial['CSdur'] - trial['USdur']
 
 #end options
-#
-            
+
+#Class for improving data transfer over serial connection
+class ReadLine:
+    def __init__(self, s):
+        self.buf = bytearray()
+        self.s = s
+        #print("Using Readline")
+        
+    def radline(self):
+        i = self.buf.find(b"\n")
+        if i >= 0:
+            r = self.buf[:i+1]
+            self.buf = self.buf[i+1:]
+            #print("Got a line")
+            return r
+        while True:
+            i = max(1, min(2048, self.s.in_waiting))
+            data = self.s.read(i)
+            i = data.find(b"\n")
+            if i > 0:
+                r = self.buf + data[:i+1]
+                self.buf[0:] = data[i+1:]
+                return r
+            else:
+                self.buf.extend(data)
+      
+      
 class dtsc():
     def __init__(self):
         self.animalID = 'default'
@@ -107,9 +132,10 @@ class dtsc():
         
     def background_thread(self):
         '''Background thread to continuously read serial. Used during a trial.'''
+        reader = ReadLine(self.ser);
         while True:
             if self.trialRunning:
-                str = self.ser.readline().rstrip()
+                str = reader.radline().rstrip()
                 if len(str) > 0:
                     print str
                     self.NewSerialData(str)
@@ -133,8 +159,8 @@ class dtsc():
                         self.filePtr.write(str + '\n')
                     
                     #print "\t=== treadmill.NewSerialData sending serial data to socketio: '" + str + "'"
-                    if self.socketio:
-                        self.socketio.emit('serialdata', {'data': str})
+                    #if self.socketio:
+                    #    self.socketio.emit('serialdata', {'data': str})
                     
                     #stop trial
                     parts = str.split(',')
