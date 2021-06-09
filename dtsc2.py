@@ -84,7 +84,7 @@ class ReadLine:
             i = max(1, min(2048, self.s.in_waiting))
             data = self.s.read(i)
             i = data.find(b"\n")
-            if i >= 0:
+            if i > 0:
                 r = self.buf + data[:i+1]
                 self.buf[0:] = data[i+1:]
                 return r
@@ -131,10 +131,10 @@ class dtsc():
         
     def background_thread(self):
         '''Background thread to continuously read serial. Used during a trial.'''
-        reader = ReadLine(self);
+        reader = ReadLine(self.ser);
         while True:
             if self.trialRunning:
-                str = reader.radline()
+                str = reader.radline().rstrip()
                 if len(str) > 0:
                     print str
                     self.NewSerialData(str)
@@ -158,8 +158,8 @@ class dtsc():
                         self.filePtr.write(str + '\n')
                     
                     #print "\t=== treadmill.NewSerialData sending serial data to socketio: '" + str + "'"
-                    if self.socketio:
-                        self.socketio.emit('serialdata', {'data': str})
+                    #if self.socketio:
+                       # self.socketio.emit('serialdata', {'data': str})
                     
                     #stop trial
                     parts = str.split(',')
