@@ -65,32 +65,6 @@ trial['sessionDur'] = trial['numTrial'] * trial['trialDur']
 trial['CS_USinterval'] = trial['CSdur'] - trial['USdur']
 
 #end options
-
-#Class for improving data transfer over serial connection
-class ReadLine:
-    def __init__(self, s):
-        self.buf = bytearray()
-        self.s = s
-        #print("Using Readline")
-        
-    def radline(self):
-        i = self.buf.find(b"\n")
-        if i >= 0:
-            r = self.buf[:i+1]
-            self.buf = self.buf[i+1:]
-            #print("Got a line")
-            return r
-        while True:
-            i = max(1, min(2048, self.s.in_waiting))
-            data = self.s.read(i)
-            i = data.find(b"\n")
-            if i > 0:
-                r = self.buf + data[:i+1]
-                self.buf[0:] = data[i+1:]
-                return r
-            else:
-                self.buf.extend(data)
-      
       
 class dtsc():
     def __init__(self):
@@ -135,8 +109,9 @@ class dtsc():
         reader = ReadLine(self.ser);
         while True:
             if self.trialRunning:
-                str = reader.radline().rstrip()
+                str = slef.ser.read(self.ser.in_waiting)
                 if len(str) > 0:
+				    str = str.decode('utf-8')
                     print str
                     self.NewSerialData(str)
             time.sleep(0.01)
