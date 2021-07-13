@@ -24,6 +24,7 @@ import time
 import os.path
 from threading import Thread
 import subprocess
+import sys
 
 import eventlet
 eventlet.monkey_patch()
@@ -106,13 +107,13 @@ class dtsc():
         
     def background_thread(self):
         '''Background thread to continuously read serial. Used during a trial.'''
-        reader = ReadLine(self.ser);
         while True:
             if self.trialRunning:
-                str = slef.ser.read(self.ser.in_waiting)
+                str = self.ser.read(self.ser.in_waiting)
                 if len(str) > 0:
-				    str = str.decode('utf-8')
-                    print str
+                    str = str.decode('utf-8')
+                    print str,
+                    sys.stdout.write('')
                     self.NewSerialData(str)
             time.sleep(0.01)
 
@@ -131,7 +132,7 @@ class dtsc():
             if len(str)>0 and self.socketio:
                     #save to file
                     if self.filePtr:
-                        self.filePtr.write(str + '\n')
+                        self.filePtr.write(str)
                     
                     #print "\t=== treadmill.NewSerialData sending serial data to socketio: '" + str + "'"
                     #if self.socketio:
